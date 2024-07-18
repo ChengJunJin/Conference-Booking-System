@@ -1,0 +1,46 @@
+server:
+  port: 9000
+  servlet:
+    context-path: /
+
+spring:
+  datasource:
+    driver-class-name: csii.sundb.jdbc.SundbDriver
+    # 待修改
+    url: "jdbc:sundb://192.168.123.75:22581/sundb" #192.168.123.75
+    username: "test"
+    password: "test"
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8
+    serialization:
+      write-dates-as-timestamps: false
+  messages:
+    basename: messages
+  mail:
+    host: smtp.263.net
+    username: hys@csii.com.cn
+    password: 19914bCA711Ad642
+    default-encoding: utf-8
+    properties:
+      mail:
+        smtp:
+          auth: true
+#      host: smtp.163.com #待修改
+#      username: antladdie #待修改 登录服务器邮箱账号
+#      password: xxxx #不是邮箱密码，这个是我们开通SMTP、POP时得到的授权码
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    auto-mapping-behavior: full
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  mapper-locations: classpath*:mapper/*Mapper.xml
+  global-config:
+    # 逻辑删除配置
+    db-config:
+      # 删除前
+      logic-not-delete-value: 1
+      # 删除后
+      logic-delete-value: 0
+  type-aliases-package: com.csii.mapper

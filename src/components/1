@@ -1,0 +1,61 @@
+根据22c 标准 CLUSTER_ASYNC_REPLICATION 属性已被移除.\\
+Goldilocks cluster的内部 replica根据DML 处理方式分为 async/sync.
+
+所有 DML 处理以 [[span('''driver node''',style=color:red;)]] 为准.\\
+
+1. driver node 从 client 接受 DML 请求.
+
+2. driver node分析 DML并按以下方式区分 DML 处理方式.
+ - Query 方式 - async 复制
+ - Protocol (grid) 方式 - sync 复制
+[[Image(0_dml_request.png,550px)]]
+== Query 方式 ==
+
+3. 将 Query 传递给 update master.
+
+4. update master 在 local 执行 Query.
+
+5. 将结果传递给 driver node.
+
+6. driver node 根据结果执行以下操作.
+ - 在local 执行
+ - 传递给所有非 update master 的 node
+
+7. 完成第6步的两个操作后return 给 client
+[[Image(1_updatemaster_trans.png,550px)]][[Image(2_other_trans_return.png,550px)]]
+== Protocol (grid) 方式 ==
+
+3. modify 要修改的 record .
+
+4. 将 record 和 grid 按 block 传递给update master .
+
+5. update master 在local 反应该 record 和 grid.
+
+6. 将结果传递给 driver node.
+
+7. driver node 根据结果执行以下操作.
+ - 在local 执行
+ - 传递给所有非update master 的 node 
+
+8. 等待第7步传递的响应.
+
+9. 4步~8步循环执行.
+
+10. 所有循环完成后return client
+[[Image(3_dml_request.png,550px)]][[Image(4_updatemaster_trans.png,550px)]][[Image(5_cycle after_return.png,550px)]]
+
+2 1块=12
+14 1块=75
+
+
+
+
+
+
+/run i=10 n=GetNumGroupMembers() if (n>i) then elseif (n==i) then BattlefieldFrameGroupJoinButton:Enable() BattlegroundType1:Click() else BattlefieldFrameGroupJoinButton:Disable() end
+/click BattlefieldFrameGroupJoinButton
+
+/run i=10 n=GetNumGroupMembers() if (n>i) then SendChatMessage("队伍人数大于"..i..",将开始移除后加入的玩家，请见谅","RAID_WARNING","Common") else print("--"..n) end
+/click PVPReadyDialogEnterBattleButton
+
+/run function e(o) for i=1,9 do local D= UnitDebuff(o,i); if D=='逃亡者' then return true end end end for i=1,40 do o="raid"..i  u=UnitLevel(o); if not UnitIsConnected(o) or e(o) or i>10 or u<70 or u>79 then print(o) UninviteUnit(o)  end end

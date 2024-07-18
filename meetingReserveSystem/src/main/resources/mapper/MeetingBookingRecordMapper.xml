@@ -1,0 +1,216 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.csii.mapper.MeetingBookingRecordMapper">
+    <resultMap id="CancelRecordsMap" type="com.csii.vo.CancelInfoVO">
+        <result property="recordId" column="record_id" javaType="java.lang.Integer" jdbcType="INTEGER"/>
+        <result property="meetingRoom" column="meeting_room" jdbcType="VARCHAR" javaType="java.lang.String"/>
+        <result property="meetingTheme" column="meeting_theme" jdbcType="VARCHAR" javaType="java.lang.String"/>
+        <result property="startTime" column="start_time" jdbcType="DATE" javaType="java.sql.Date"/>
+        <result property="endTime" column="end_time" jdbcType="DATE" javaType="java.sql.Date"/>
+        <result property="bookerName" column="booker_name" jdbcType="VARCHAR" javaType="java.lang.String"/>
+        <result property="bookerEmail" column="booker_email" javaType="java.lang.String" jdbcType="VARCHAR"/>
+        <result property="cancelTime" column="cancel_time" jdbcType="DATE" javaType="java.sql.Date"/>
+    </resultMap>
+
+    <!--查询今天之后的全部会议预定记录-->
+    <select id="selectAllRecords" resultType="com.csii.vo.MeetingBookingRecordVo">
+        select record_id recordId,
+               meeting_room meetingRoom,
+               meeting_theme meetingTheme,
+               to_char(start_time,'YYYY-MM-DD HH24:MI:SS') startTime,
+               to_char(end_time,'YYYY-MM-DD HH24:MI:SS') endTime,
+               booker_name bookerName,
+               booker_email bookerEmail,
+               commit_time commitTime,
+               cancel_time cancelTime,
+               booking_status bookingStatus,
+               member_pro memberPro
+        from meeting_booking_record
+        where start_Time >= #{dayTime,jdbcType=DATE}
+        order by start_Time asc
+    </select>
+    <!--查询最近的会议预定记录-->
+    <select id="selectRecentRecords" resultType="com.csii.vo.MeetingBookingRecordVo">
+        select record_id recordId,
+               meeting_room meetingRoom,
+               meeting_theme meetingTheme,
+               to_char(start_time,'YYYY-MM-DD HH24:MI:SS') startTime,
+               to_char(end_time,'YYYY-MM-DD HH24:MI:SS') endTime,
+               booker_name bookerName,
+               booker_email bookerEmail,
+               commit_time commitTime,
+               cancel_time cancelTime,
+               booking_status bookingStatus,
+               member_pro memberPro
+        from meeting_booking_record
+        where (start_Time &lt;= CURRENT_TIMESTAMP and end_time >= CURRENT_TIMESTAMP) or (start_time >= CURRENT_TIMESTAMP and end_time &lt;= SYSDATE + 7)
+        order by start_Time asc
+    </select>
+
+    <!--  根据条件查询会议预定记录  -->
+    <select id="selectRecords" parameterType="com.csii.vo.SearchBookRecordsReqVO" resultType="com.csii.vo.MeetingBookingRecordVo">
+        select record_id recordId,
+               meeting_room meetingRoom,
+               meeting_theme meetingTheme,
+               to_char(start_time,'YYYY-MM-DD HH24:MI:SS') startTime,
+               to_char(end_time,'YYYY-MM-DD HH24:MI:SS') endTime,
+               booker_name bookerName,
+               booker_email bookerEmail,
+               commit_time commitTime,
+               cancel_time cancelTime,
+               booking_status bookingStatus,
+               member_pro memberPro
+        from meeting_booking_record
+        where booking_status in (0,1)
+        <if test="reqVO.startTime != null">
+            and start_time >= #{reqVO.startTime,jdbcType=DATE}
+        </if>
+        <if test="reqVO.endTime != null">
+            and end_time <![CDATA[ <=  ]]> #{reqVO.endTime,jdbcType=DATE}
+        </if>
+        <if test="reqVO.meetingRoom != null and reqVO.meetingRoom != ''">
+            and meeting_room = #{reqVO.meetingRoom,jdbcType=VARCHAR}
+        </if>
+        order by start_Time asc
+    </select>
+
+    <!--追加一条预约记录-->
+    <insert id="insertRecord" parameterType="com.csii.vo.AddBookRecordReqVO">
+        insert into meeting_booking_record(
+            meeting_room,
+            meeting_theme,
+            start_time,
+            end_time,
+            booker_name,
+            booker_email,
+            booking_status,
+            commit_time,
+            random_string,
+            member_pro)
+        values (#{record.meetingRoom,jdbcType=VARCHAR},
+                #{record.meetingTheme,jdbcType=VARCHAR},
+                #{record.startTime,jdbcType=DATE},
+                #{record.endTime,jdbcType=DATE},
+                #{record.bookerName,jdbcType=VARCHAR},
+                #{record.bookerEmail,jdbcType=VARCHAR},0,current_timestamp,#{record.randomString,jdbcType=VARCHAR},
+                #{record.memberPro,jdbcType=VARCHAR})
+    </insert>
+
+    <!--根据recordId取消预约-->
+    <update id="cancel" parameterType="java.lang.Integer">
+        update meeting_booking_record set booking_status = '1',cancel_time = current_timestamp
+        where record_id = #{recordId,jdbcType=INTEGER}
+    </update>
+
+    <!--查询取消预约数据总条数-->
+    <select id="selectCancelRecordCount" resultType="INTEGER">
+        select count(1)
+        from meeting_booking_record
+        where booking_status = '1'
+    </select>
+
+    <!--获取所有取消预约记录-->
+    <select id="selectAllCancelRecords" resultType="com.csii.vo.MeetingBookingRecordVo">
+        select record_id recordId,
+               meeting_room meetingRoom,
+               meeting_theme meetingTheme,
+               to_char(start_time,'YYYY-MM-DD HH24:MI:SS') startTime,
+               to_char(end_time,'YYYY-MM-DD HH24:MI:SS') endTime,
+               booker_name bookerName,
+               booker_email bookerEmail,
+               commit_time commitTime,
+               cancel_time cancelTime,
+               booking_status bookingStatus
+        from meeting_booking_record
+        where booking_status = '1'
+        order by cancel_time asc
+    </select>
+
+    <!--根据条件查询取消预约列表-->
+    <select id="selectCancelRecords" parameterType="com.csii.vo.CancelRecordsReqVO" resultType="com.csii.vo.MeetingBookingRecordVo">
+        select  record_id recordId,
+                meeting_room meetingRoom,
+                meeting_theme meetingTheme,
+                to_char(start_time,'YYYY-MM-DD HH24:MI:SS') startTime,
+                to_char(end_time,'YYYY-MM-DD HH24:MI:SS') endTime,
+                booker_name bookerName,
+                booker_email bookerEmail,
+                commit_time commitTime,
+                cancel_time cancelTime,
+                booking_status bookingStatus
+        from meeting_booking_record
+        where booking_status = '1'
+        <if test="reqVO.startTime != null">
+            and start_time >= #{reqVO.startTime,jdbcType=DATE}
+        </if>
+        <if test="reqVO.endTime != null">
+            and end_time <![CDATA[ <=  ]]> #{reqVO.endTime,jdbcType=DATE}
+        </if>
+        <if test="reqVO.meetingRoom != null and reqVO.meetingRoom != ''">
+            and meeting_room = #{reqVO.meetingRoom,jdbcType=VARCHAR}
+        </if>
+        <if test="reqVO.recordIdList != null">
+            and record_id in
+            <foreach collection="reqVO.recordIdList" open="(" item="item" separator="," close=")">
+                #{item,jdbcType=INTEGER}
+            </foreach>
+        </if>
+        order by cancel_time asc
+    </select>
+
+    <!--删除所有取消预约记录-->
+    <delete id="deleteAllCancelRecords">
+        delete from meeting_booking_record
+        where booking_status = '1'
+    </delete>
+
+    <!--根据条件删除取消预约的记录-->
+    <delete id="deleteCancelRecords" parameterType="com.csii.vo.CancelRecordsReqVO">
+        delete from meeting_booking_record
+        where booking_status = '1'
+        <if test="reqVO.startTime != null">
+            and start_time >= #{reqVO.startTime,jdbcType=DATE}
+        </if>
+        <if test="reqVO.endTime != null">
+            and end_time <![CDATA[ <=  ]]> #{reqVO.endTime,jdbcType=DATE}
+        </if>
+        <if test="reqVO.meetingRoom != null and reqVO.meetingRoom != ''">
+            and meeting_room = #{reqVO.meetingRoom,jdbcType=VARCHAR}
+        </if>
+        <if test="reqVO.recordIdList != null">
+            and record_id in
+            <foreach collection="reqVO.recordIdList" open="(" item="item" separator="," close=")">
+                #{item,jdbcType=INTEGER}
+            </foreach>
+        </if>
+    </delete>
+
+    <!--根据取消预约的会议室预约id查询取消信息-->
+    <select id="selectCancelInfoFromRecordId" resultType="com.csii.entity.MeetingBookingRecord">
+        select record_id recordId,
+               meeting_room meetingRoom,
+               meeting_theme meetingTheme,
+               start_time startTime,
+               end_time endTime,
+               booker_name bookerName,
+               booker_email bookerEmail,
+               commit_time commitTime,
+               cancel_time cancelTime,
+               random_string randomString
+        from meeting_booking_record
+        where record_id = #{recordId,jdbcType=INTEGER}
+    </select>
+
+    <!--  查询全体管理员邮箱  -->
+    <select id="selectManagerEmail" resultType="string">
+        select user_email from manager_info
+    </select>
+
+    <!--  修改邮箱和预约码  -->
+    <update id="updateEmailAndRandom" parameterType="com.csii.vo.MeetingBookingRecordVo">
+        update meeting_booking_record set booker_email = #{reqVO.bookerEmail,jdbcType=VARCHAR},random_string = #{reqVO.randomString,jdbcType=VARCHAR}
+        where record_id = #{reqVO.recordId,jdbcType=INTEGER}
+    </update>
+
+</mapper>
